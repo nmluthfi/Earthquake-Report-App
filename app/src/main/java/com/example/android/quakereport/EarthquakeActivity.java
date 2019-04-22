@@ -15,7 +15,10 @@
  */
 package com.example.android.quakereport;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -48,6 +51,8 @@ public class EarthquakeActivity extends AppCompatActivity
 
     private ProgressBar progressBar;
 
+    private ConnectivityManager connectivityManager;
+
     // Tag for the log messages
     private static final String LOG_TAG = QueryUtils.class.getSimpleName();
 
@@ -60,14 +65,15 @@ public class EarthquakeActivity extends AppCompatActivity
         Log.i(LOG_TAG, "MainActivity onCreate called");
 
         // Find a reference to the {@link ListView} in the layout
-        ListView earthquakeListView = (ListView) findViewById(R.id.list);
+        ListView earthquakeListView = findViewById(R.id.list);
 
         // Make an EmptyState
         emptyViewText = findViewById(R.id.tv_empty_state_earthquake);
         earthquakeListView.setEmptyView(emptyViewText);
 
-        // Define progress barr
-        progressBar = findViewById(R.id.loading_spinner);
+        // Define connectitivy manager to check the user have internet connection or not
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
 
         earthquakeAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>() {
         });
@@ -95,10 +101,28 @@ public class EarthquakeActivity extends AppCompatActivity
             }
         });
 
-        // Initialize the loader. Pass in the int ID constant defined above and pass in null for
-        // the bundle. Pass in this activity for the LoaderCallbacks parameter (which is valid
-        // because this activity implements the LoaderCallbacks interface).
-        getSupportLoaderManager().initLoader(EARTHQUAKE_LOADER_ID, null, this);
+        // Get a reference to the ConnectivityManager to check state of network connectivity
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // Get details on the currently active default data network
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        // If there is a network connection, fetch data
+        if (networkInfo != null && networkInfo.isConnected()) {
+            // Initialize the loader. Pass in the int ID constant defined above and pass in null for
+            // the bundle. Pass in this activity for the LoaderCallbacks parameter (which is valid
+            // because this activity implements the LoaderCallbacks interface).
+            getSupportLoaderManager().initLoader(EARTHQUAKE_LOADER_ID, null, this);
+        } else {
+            // Otherwise, display error
+            // First, hide loading indicator so error message will be visible
+            View loadingIndicator = findViewById(R.id.loading_spinner);
+            loadingIndicator.setVisibility(View.GONE);
+
+            // Update empty state with no connection error message
+            emptyViewText.setText("No internet connection");
+        }
     }
 
 
@@ -112,10 +136,24 @@ public class EarthquakeActivity extends AppCompatActivity
     @Override
     public void onLoadFinished(@NonNull Loader<List<Earthquake>> loader, List<Earthquake> earthquakes) {
         Log.i(LOG_TAG, "MainActivity onLoadFinished called");
-        progressBar.setVisibility(View.GONE);
 
-        // Set empty state text to display when no data
-        emptyViewText.setText(R.string.empty_state_no_earthquakes);
+        // Get the network status
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+        /*
+         *  If user have inter net connection set the progress bar and empty set.
+         *  If not show no internet connection state
+         * */
+        if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
+            // Define progress barr
+            progressBar = findViewById(R.id.loading_spinner);
+            progressBar.setVisibility(View.GONE);
+            // Set empty state text to display when no data
+            emptyViewText.setText(R.string.empty_state_no_earthquakes);
+        } else {
+            emptyViewText.setText("No internet connection");
+        }
+
 
         // Clear the adapter of previous earthquake data
         earthquakeAdapter.clear();
