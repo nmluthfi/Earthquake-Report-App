@@ -27,6 +27,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -45,6 +46,8 @@ public class EarthquakeActivity extends AppCompatActivity
 
     private EarthquakeAdapter earthquakeAdapter;
 
+    private ProgressBar progressBar;
+
     // Tag for the log messages
     private static final String LOG_TAG = QueryUtils.class.getSimpleName();
 
@@ -62,6 +65,9 @@ public class EarthquakeActivity extends AppCompatActivity
         // Make an EmptyState
         emptyViewText = findViewById(R.id.tv_empty_state_earthquake);
         earthquakeListView.setEmptyView(emptyViewText);
+
+        // Define progress barr
+        progressBar = findViewById(R.id.loading_spinner);
 
         earthquakeAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>() {
         });
@@ -106,6 +112,7 @@ public class EarthquakeActivity extends AppCompatActivity
     @Override
     public void onLoadFinished(@NonNull Loader<List<Earthquake>> loader, List<Earthquake> earthquakes) {
         Log.i(LOG_TAG, "MainActivity onLoadFinished called");
+        progressBar.setVisibility(View.GONE);
 
         // Set empty state text to display when no data
         emptyViewText.setText(R.string.empty_state_no_earthquakes);
