@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.AsyncTaskLoader;
+import android.util.Log;
 
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class EarthquakeLoader extends AsyncTaskLoader<List<Earthquake>> {
     @Nullable
     @Override
     public List<Earthquake> loadInBackground() {
+        Log.i(LOG_TAG, "EarthquakeLoader loadInBackground called");
         // Dont perform the request if there are no URLs, or the first URL is null
         if (mUrl == null) {
             return null;
@@ -43,6 +45,7 @@ public class EarthquakeLoader extends AsyncTaskLoader<List<Earthquake>> {
 
     @Override
     protected void onStartLoading() {
+        Log.i(LOG_TAG, "EarthquakeLoader onStartLoading called");
         forceLoad();
     }
 }

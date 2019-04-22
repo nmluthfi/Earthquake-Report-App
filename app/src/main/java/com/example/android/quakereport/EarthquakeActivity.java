@@ -23,9 +23,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,13 +45,23 @@ public class EarthquakeActivity extends AppCompatActivity
 
     private EarthquakeAdapter earthquakeAdapter;
 
+    // Tag for the log messages
+    private static final String LOG_TAG = QueryUtils.class.getSimpleName();
+
+    private TextView emptyViewText;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
+        Log.i(LOG_TAG, "MainActivity onCreate called");
+
         // Find a reference to the {@link ListView} in the layout
         ListView earthquakeListView = (ListView) findViewById(R.id.list);
+
+        // Make an EmptyState
+        emptyViewText = findViewById(R.id.tv_empty_state_earthquake);
+        earthquakeListView.setEmptyView(emptyViewText);
 
         earthquakeAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>() {
         });
@@ -87,11 +99,17 @@ public class EarthquakeActivity extends AppCompatActivity
     @NonNull
     @Override
     public Loader<List<Earthquake>> onCreateLoader(int i, @Nullable Bundle bundle) {
+        Log.i(LOG_TAG, "MainActivity onCreateLoader called");
         return new EarthquakeLoader(this, USGS_REQUEST_URL);
     }
 
     @Override
     public void onLoadFinished(@NonNull Loader<List<Earthquake>> loader, List<Earthquake> earthquakes) {
+        Log.i(LOG_TAG, "MainActivity onLoadFinished called");
+
+        // Set empty state text to display when no data
+        emptyViewText.setText(R.string.empty_state_no_earthquakes);
+
         // Clear the adapter of previous earthquake data
         earthquakeAdapter.clear();
 
@@ -104,6 +122,7 @@ public class EarthquakeActivity extends AppCompatActivity
 
     @Override
     public void onLoaderReset(@NonNull Loader<List<Earthquake>> loader) {
+        Log.i(LOG_TAG, "MainActivity onLoadReset called");
         earthquakeAdapter.clear();
     }
 
