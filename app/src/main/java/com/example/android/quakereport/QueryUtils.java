@@ -1,5 +1,6 @@
 package com.example.android.quakereport;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -25,27 +26,17 @@ public final class QueryUtils {
     /**
      * Sample JSON response for a USGS query
      */
-    private static final String SAMPLE_JSON_RESPONSE
-            = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=6&limit=10";
 
     // Tag for the log messages
     private static final String LOG_TAG = QueryUtils.class.getSimpleName();
-
-    /**
-     * Create a private constructor because no one should ever create a {@link QueryUtils} object.
-     * This class is only meant to hold static variables and methods, which can be accessed
-     * directly from the class name QueryUtils (and an object instance of QueryUtils is not needed).
-     */
-    private QueryUtils() {
-    }
 
     /*
      *   Query the USGS dataset and return an {@link List<Earthquake>} object to represent
      *   a list of earthquake
      * */
-    private static List<Earthquake> fetchEarthquakeData(String requestUrl) {
+    public static List<Earthquake> fetchEarthquakeData(String requestUrl) {
         // Create URL object
-        URL url = createUrL(requestUrl);
+        URL url = createUrl(requestUrl);
 
         // Perform HTTP request to the URL and receive a JSON response back
         String jsonResponse = null;
@@ -56,21 +47,20 @@ public final class QueryUtils {
         }
 
 
-        List<Earthquake> earthquakes = new ArrayList<>();
-        earthquakes = extractEarthquakes();
+        List<Earthquake> earthquakes = extractEarthquakes(jsonResponse);
         return earthquakes;
 
     }
 
-    /*
-     * Return new URL object from give String URL
-     * */
-    private static URL createUrL(String stringUrl) {
+    /**
+     * Returns new URL object from the given string URL.
+     */
+    private static URL createUrl(String stringUrl) {
         URL url = null;
         try {
             url = new URL(stringUrl);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            Log.e(LOG_TAG, "Problem building the URL ", e);
         }
         return url;
     }
@@ -110,6 +100,9 @@ public final class QueryUtils {
             Log.e(LOG_TAG, "Problem retrieving the earthquake JSON result " + e);
         } finally {
             if (urlConnection != null)
+                // Closing the input stream could throw an IOException, which is why
+                // the makeHttpRequest(URL url) method signature specifies than an IOException
+                // could be thrown.
                 urlConnection.disconnect();
             if (inputStream != null)
                 inputStream.close();
@@ -141,21 +134,21 @@ public final class QueryUtils {
      * Return a list of {@link Earthquake} objects that has been built up from
      * parsing a JSON response.
      */
-    public static ArrayList<Earthquake> extractEarthquakes() {
+    private static List<Earthquake> extractEarthquakes(String earthquakeJSON) {
 
-        // Create an empty ArrayList that we can start adding earthquakes to
-        ArrayList<Earthquake> earthquakes = new ArrayList<>();
+        // If the JSON String is empty or null, then return null
+        if (TextUtils.isEmpty(earthquakeJSON)) {
+            return null;
+        }
 
-        // Try to parse the SAMPLE_JSON_RESPONSE. If there's a problem with the way the JSON
-        // is formatted, a JSONException exception object will be thrown.
-        // Catch the exception so the app doesn't crash, and print the error message to the logs.
+        List<Earthquake> earthquakes = new ArrayList<>();
         try {
 
             // TODO: Parse the response given by the SAMPLE_JSON_RESPONSE string and
             // build up a list of Earthquake objects with the corresponding data.
 
             // Covert SAMPLE_JSON_RESPONSE into JSONObject
-            JSONObject jsonObjectRoot = new JSONObject(SAMPLE_JSON_RESPONSE);
+            JSONObject jsonObjectRoot = new JSONObject(earthquakeJSON);
 
             // Extract JSONArray features
             JSONArray features = jsonObjectRoot.getJSONArray("features");
@@ -180,7 +173,10 @@ public final class QueryUtils {
                 // Casting the all variable except String
                 // String magnitudeInString = String.valueOf(magnitude);
                 // String timeInString = String.valueOf(time);
-                earthquakes.add(new Earthquake(magnitude, place, time, url));
+
+                Earthquake earthquake = new Earthquake(magnitude, place, time, url);
+
+                earthquakes.add(earthquake);
             }
 
         } catch (JSONException e) {
