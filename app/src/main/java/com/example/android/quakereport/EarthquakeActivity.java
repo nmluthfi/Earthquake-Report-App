@@ -120,7 +120,7 @@ public class EarthquakeActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<Earthquake> earthquakes) {
             // Clear the adapter of previous earthquake data
-//            earthquakeAdapter.clear();
+            earthquakeAdapter.clear();
 
             // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
             // data set. This will trigger the ListView to update.
