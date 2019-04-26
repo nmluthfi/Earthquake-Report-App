@@ -41,7 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EarthquakeActivity extends AppCompatActivity
-        implements LoaderManager.LoaderCallbacks<List<Earthquake>> {
+        implements LoaderManager.LoaderCallbacks<List<Earthquake>>,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     /**
      * URL for earthquake data from the USGS dataset
@@ -73,7 +74,6 @@ public class EarthquakeActivity extends AppCompatActivity
 
         // Make an EmptyState
         emptyViewText = findViewById(R.id.tv_empty_state_earthquake);
-        earthquakeListView.setEmptyView(emptyViewText);
 
         // Define connectitivy manager to check the user have internet connection or not
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -85,6 +85,12 @@ public class EarthquakeActivity extends AppCompatActivity
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(earthquakeAdapter);
+
+        // Obtain a reference to the SharedPreferences file for this app
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        // And register to be notified of preference changes
+        // So we know when the user has adjusted the query settings
+        prefs.registerOnSharedPreferenceChangeListener(EarthquakeActivity.this);
 
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -129,18 +135,17 @@ public class EarthquakeActivity extends AppCompatActivity
         }
     }
 
-
     @NonNull
     @Override
     public Loader<List<Earthquake>> onCreateLoader(int i, @Nullable Bundle bundle) {
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         String minMagnitude = sharedPrefs.getString(
                 getString(R.string.settings_min_magnitude_key),
-                getString(R.string.settings_min_magnitude_default));
+                getString(R.string.settings_order_by_magnitude_value));
 
         String orderBy = sharedPrefs.getString(
                 getString(R.string.settings_order_by_key),
-                getString(R.string.settings_order_by_default)
+                getString(R.string.settings_order_by_magnitude_value)
         );
 
         Uri baseUri = Uri.parse(USGS_REQUEST_URL);
@@ -207,5 +212,24 @@ public class EarthquakeActivity extends AppCompatActivity
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.settings_min_magnitude_key)) ||
+                key.equals(getString(R.string.settings_order_by_key))) {
+            // Clear the ListView as a new query will be kicked off
+            earthquakeAdapter.clear();
+
+            // Hide the empty state text view as the loading indicator will be displayed
+            emptyViewText.setVisibility(View.GONE);
+
+            // Show the loading indicator while new data is being fetched
+            View loadingIndicator = findViewById(R.id.loading_spinner);
+            loadingIndicator.setVisibility(View.VISIBLE);
+
+            // Restart the loader to requery the USGS as the query settings have been updated
+            getSupportLoaderManager().restartLoader(EARTHQUAKE_LOADER_ID, null, this);
+        }
     }
 }
